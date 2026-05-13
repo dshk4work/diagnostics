@@ -5705,14 +5705,14 @@ h1 {
 
 .screen-id--directions .direction-pill {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  min-height: 24px;
-  max-width: 44%;
-  padding: 0 9px;
+  top: 9px;
+  right: 9px;
+  min-height: 21px;
+  max-width: calc(100% - 18px);
+  padding: 0 7px;
   color: #111111;
   background: #d8ff4f;
-  font-size: 10.5px;
+  font-size: 9.5px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -7695,7 +7695,8 @@ h1 {
 }
 
 .screen-id--directions .direction-card.is-best-match h2 {
-  padding-right: min(38%, 132px);
+  padding-right: 0;
+  padding-top: 18px;
 }
 
 @media (min-width: 720px) {
@@ -7708,9 +7709,9 @@ h1 {
   }
 }
 
-@media (min-width: 1080px) {
+@media (min-width: 1280px) {
   .screen-id--directions {
-    width: min(calc(100vw - 64px), 1080px);
+    width: min(calc(100vw - 72px), 1180px);
   }
 
   .screen-id--directions .direction-list {
@@ -7718,7 +7719,7 @@ h1 {
   }
 }
 
-@media (min-width: 768px) and (max-width: 1079px) {
+@media (min-width: 768px) and (max-width: 1279px) {
   .screen-id--directions .direction-card h2 {
     font-size: clamp(19px, 2.8vw, 24px);
   }
@@ -7733,6 +7734,42 @@ h1 {
 
   .screen-id--directions .direction-fact p {
     font-size: 12px;
+    line-height: 1.14;
+  }
+}
+
+@media (min-width: 1080px) and (max-width: 1279px) {
+  .screen-id--directions {
+    width: min(calc(100vw - 56px), 980px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .screen-id--directions .direction-card {
+    padding: 16px;
+    gap: 9px;
+  }
+
+  .screen-id--directions .direction-card h2 {
+    font-size: clamp(22px, 1.6vw, 26px);
+    line-height: 1.08;
+  }
+
+  .screen-id--directions .direction-card > p {
+    font-size: 15px;
+    line-height: 1.18;
+  }
+
+  .screen-id--directions .direction-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .screen-id--directions .direction-fact {
+    min-height: 56px;
+  }
+
+  .screen-id--directions .direction-fact p {
+    font-size: 13px;
     line-height: 1.14;
   }
 }
