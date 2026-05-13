@@ -1952,7 +1952,7 @@ function renderBottomCta(screen) {
     </div>
   `;
   const disabled = !canContinue(screen);
-  const label = screen.type === "contact" ? "Показать результат" : screen.type === "directions" ? "Получить консультацию" : "Дальше";
+  const label = screen.type === "contact" ? "Показать результат" : screen.type === "directions" ? "Получить сюрприз" : "Дальше";
   return `
     <div class="bottom-bar">
       <button class="icon-button" data-action="back" aria-label="Назад"><span aria-hidden="true">←</span></button>
