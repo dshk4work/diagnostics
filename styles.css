@@ -1274,6 +1274,72 @@ h1 {
   color: #8a8a91;
 }
 
+.analysis-next {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--skillbox-lime-68);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(248, 255, 233, 0.86);
+  text-align: left;
+}
+
+.analysis-next h2 {
+  margin: 0;
+  color: var(--blue);
+  font-size: clamp(14px, 3.8vw, 17px);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+.analysis-next ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analysis-next li {
+  position: relative;
+  padding-left: 15px;
+  color: #77777f;
+  font-size: clamp(13px, 3.45vw, 15px);
+  line-height: 1.18;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: revealLine 320ms ease forwards;
+  animation-delay: var(--delay);
+}
+
+.analysis-next li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.48em;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--lime);
+}
+
+.analysis-next li:first-child::before {
+  background: var(--blue);
+}
+
+.analysis-continue {
+  min-height: 38px;
+  border: 1px solid var(--skillbox-lime);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #111111;
+  background: var(--skillbox-lime);
+  font-size: clamp(14px, 3.8vw, 16px);
+  line-height: 1;
+  font-weight: 500;
+}
+
 .context-board {
   min-height: 150px;
   display: grid;
@@ -7565,5 +7631,39 @@ h1 {
 
   .glass-bonus-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Desktop shell width: mobile-first by default, narrower planning-style
+   container on larger screens instead of wide 980-1040px panels. */
+@media (min-width: 768px) {
+  .screen:not(.screen--welcome),
+  .screen-id--directions,
+  .screen-id--bonus {
+    --side: clamp(24px, 3.2vw, 36px);
+    --panel-x: var(--side);
+    width: min(calc(100vw - 48px), 720px);
+    padding-left: var(--side);
+    padding-right: var(--side);
+  }
+
+  .screen-id--directions .direction-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .screen:not(.screen--welcome),
+  .screen-id--directions,
+  .screen-id--bonus {
+    width: min(calc(100vw - 96px), 740px);
+  }
+}
+
+@media (min-width: 1440px) {
+  .screen:not(.screen--welcome),
+  .screen-id--directions,
+  .screen-id--bonus {
+    width: 740px;
   }
 }

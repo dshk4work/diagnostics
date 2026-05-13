@@ -875,8 +875,23 @@ const screensConfig = [
     id: "profile_analysis",
     type: "analysis",
     progressLabel: "Шаг 6 из 24",
+    loaderId: "initial_profile",
     title: "Профиль начинает собираться",
-    duration: 2800,
+    duration: 3600,
+    lines: [
+      "эмоциональный фон",
+      "телесные сигналы",
+      "скрытые эмоциональные паттерны",
+      "определяем основные источники потери энергии",
+    ],
+    nextTitle: "Дальше уточним:",
+    nextLines: [
+      "где вы теряете и возвращаете ресурс",
+      "что сильнее всего забирает энергию",
+      "чего вам хочется вернуть в жизнь и работу",
+      "какой формат изменений сейчас безопасен",
+      "какой сценарий и направления могут вам подойти",
+    ],
   },
   {
     id: "contexts",
@@ -907,6 +922,19 @@ const screensConfig = [
     subtitle: "Зажмите карточку, которая болит давно.",
   },
   {
+    id: "tension_map_analysis",
+    type: "analysis",
+    loaderId: "tension_map",
+    title: "Собираем карту напряжения",
+    duration: 2800,
+    lines: [
+      "сравниваем, где вам легче и тяжелее",
+      "анализируем дневную кривую состояния",
+      "определяем главные источники потери энергии",
+      "ищем устойчивый паттерн",
+    ],
+  },
+  {
     id: "source_insight",
     type: "sourceInsight",
     progressLabel: "Шаг 11 из 24",
@@ -934,6 +962,19 @@ const screensConfig = [
     title: "Что точно не хочется тащить в следующий этап?",
   },
   {
+    id: "change_map_analysis",
+    type: "analysis",
+    loaderId: "change_map",
+    title: "Настраиваем вашу карту изменений",
+    duration: 2800,
+    lines: [
+      "фиксируем, чего вам хочется вернуть",
+      "собираем образ нормальной работы",
+      "учитываем, что точно не хочется тащить дальше",
+      "определяем безопасный формат следующего шага",
+    ],
+  },
+  {
     id: "criteria_preview",
     type: "criteriaPreview",
     progressLabel: "Шаг 15 из 24",
@@ -953,6 +994,19 @@ const screensConfig = [
     subtitle: "Выберите 5 вещей для своего рюкзака.",
   },
   {
+    id: "trajectory_analysis",
+    type: "analysis",
+    loaderId: "trajectory",
+    title: "Собираем вашу траекторию",
+    duration: 2800,
+    lines: [
+      "учитываем выбранный формат изменений",
+      "добавляем то, что вы хотите взять в следующую главу",
+      "сверяем это с вашим состоянием",
+      "строим сценарий перехода",
+    ],
+  },
+  {
     id: "trajectory",
     type: "trajectory",
     progressLabel: "Шаг 18 из 24",
@@ -963,6 +1017,20 @@ const screensConfig = [
     type: "contact",
     progressLabel: "Шаг 19 из 24",
     title: "Ваш результат готов",
+  },
+  {
+    id: "final_result_analysis",
+    type: "analysis",
+    loaderId: "final_result",
+    title: "Готовим ваш персональный результат",
+    duration: 3200,
+    lines: [
+      "определяем архетип изменений",
+      "собираем карту перехода",
+      "подбираем профессиональные среды",
+      "готовим персональный бонус",
+      "финализируем результат",
+    ],
   },
   {
     id: "outcome",
@@ -1342,16 +1410,35 @@ function renderColorChoice(screen) {
 }
 
 function renderAnalysis(screen) {
+  const lines = screen.lines || [
+    "эмоциональный фон",
+    "телесные сигналы",
+    "скрытые эмоциональные паттерны",
+    "определяем основные источники потери энергии",
+  ];
+  const title = screen.loaderId === "final_result" && state.user_name
+    ? `${state.user_name}, мы почти собрали ваш сценарий`
+    : screen.title;
   return `
     <div class="analysis-panel">
       <div class="analysis-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
-      <h1>${screen.title}</h1>
+      <h1>${title}</h1>
       <ul class="analysis-list">
-        <li style="--delay:120ms"><span>✓</span> эмоциональный фон</li>
-        <li style="--delay:520ms"><span>✓</span> телесные сигналы</li>
-        <li style="--delay:920ms"><span>✓</span> скрытые эмоциональные паттерны</li>
-        <li style="--delay:1320ms" class="is-loading"><span>◯</span> определяем основные источники потери энергии</li>
+        ${lines.map((line, index) => `
+          <li style="--delay:${120 + index * 360}ms" class="${index === lines.length - 1 ? "is-loading" : ""}">
+            <span>${index === lines.length - 1 ? "◯" : "✓"}</span>${line}
+          </li>
+        `).join("")}
       </ul>
+      ${screen.nextLines ? `
+        <div class="analysis-next">
+          <h2>${screen.nextTitle || "Следующие шаги диагностики"}</h2>
+          <ul>
+            ${screen.nextLines.map((line, index) => `<li style="--delay:${1650 + index * 260}ms">${line}</li>`).join("")}
+          </ul>
+        </div>
+      ` : ""}
+      <button class="analysis-continue" type="button" data-action="next">Продолжить</button>
     </div>
   `;
 }
@@ -1977,10 +2064,20 @@ async function handleColorSelect(screen, colorId) {
 }
 
 function startAnalysis(screen) {
-  saveStep("profile_analysis_started", getAnswerByScreen(screen));
+  saveStep("analysis_loader_view", getAnalysisPayload(screen, "analysis_loader_view"));
   analysisTimer = window.setTimeout(async () => {
     await goNext();
   }, screen.duration || 2800);
+}
+
+function getAnalysisPayload(screen, eventName) {
+  return {
+    event_name: eventName,
+    loader_id: screen.loaderId || screen.id,
+    current_step: screen.id,
+    outcome: state.outcome || getOutcome(state.score),
+    score_snapshot: { ...state.score },
+  };
 }
 
 function bindContexts(screen) {
@@ -2639,6 +2736,8 @@ async function goNext() {
     await saveFinalLead();
   } else if (screen.id === "welcome") {
     await saveStep("welcome_started", "start");
+  } else if (screen.type === "analysis") {
+    await saveStep("analysis_loader_complete", getAnalysisPayload(screen, "analysis_loader_complete"));
   } else {
     await saveStep(screen.id, getAnswerByScreen(screen));
   }
