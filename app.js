@@ -992,7 +992,7 @@ const screensConfig = [
     type: "backpack",
     progressLabel: "Шаг 17 из 24",
     title: "Что вы бы хотели взять с собой в следующую главу жизни?",
-    subtitle: "Выберите 5 вещей для своего рюкзака.",
+    subtitle: "Это не про то, что у вас уже есть. Выберите, чего сейчас не хватает — и что хочется вернуть, усилить или получить в следующем этапе.",
   },
   {
     id: "final_result_analysis",
@@ -1403,26 +1403,38 @@ function renderAnalysis(screen) {
     : screen.title;
   return `
     <div class="analysis-panel">
-      <div class="analysis-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
-      <h1>${title}</h1>
-      <ul class="analysis-list">
-        ${lines.map((line, index) => `
-          <li style="--delay:${120 + index * 360}ms" class="${index === lines.length - 1 ? "is-loading" : ""}">
-            <span>${index === lines.length - 1 ? "◯" : "✓"}</span>${line}
-          </li>
-        `).join("")}
-      </ul>
-      ${screen.nextLines ? `
-        <div class="analysis-next">
-          <h2>${screen.nextTitle || "Следующие шаги диагностики"}</h2>
-          <ul>
-            ${screen.nextLines.map((line, index) => `<li style="--delay:${1650 + index * 260}ms">${line}</li>`).join("")}
-          </ul>
-        </div>
-      ` : ""}
-      <button class="analysis-continue" type="button" data-action="next">Продолжить</button>
+      <div class="analysis-main">
+        <div class="analysis-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+        <h1>${title}</h1>
+        <ul class="analysis-list">
+          ${lines.map((line, index) => `
+            <li style="--delay:${120 + index * 360}ms" class="${index === lines.length - 1 ? "is-loading" : ""}">
+              <span>${index === lines.length - 1 ? "◯" : "✓"}</span>${line}
+            </li>
+          `).join("")}
+        </ul>
+        ${screen.nextLines ? `
+          <div class="analysis-next">
+            <h2>${screen.nextTitle || "Следующие шаги диагностики"}</h2>
+            <ul>
+              ${screen.nextLines.map((line, index) => `<li style="--delay:${1650 + index * 260}ms">${line}</li>`).join("")}
+            </ul>
+          </div>
+        ` : ""}
+      </div>
+      <button class="analysis-skip-link" type="button" data-action="next">Продолжить</button>
     </div>
   `;
+}
+
+function getUserName() {
+  return (state.profile?.name || state.user_name || "").trim();
+}
+
+function renderPersonalGreeting(text) {
+  const name = getUserName();
+  if (!name) return "";
+  return `<p class="personal-greeting">${escapeHtml(name)}, ${text}</p>`;
 }
 
 function renderContexts(screen) {
@@ -1513,6 +1525,7 @@ function renderSourceInsight(screen) {
   return `
     <div class="profile-card insight-output">
       <div class="insight-badge">Первый сильный инсайт</div>
+      ${renderPersonalGreeting("вот что уже видно по вашим ответам")}
       <h1>${screen.title}</h1>
       <div class="insight-panel">
         <p>По вашим ответам видно: дело не только в усталости. Сильнее всего сейчас проседают:</p>
@@ -1600,6 +1613,7 @@ function renderCriteriaPreview(screen) {
   return `
     <div class="profile-card reveal-card insight-output">
       <div class="insight-badge">Профиль собран</div>
+      ${renderPersonalGreeting("ваши ответы уже складываются в понятные критерии")}
       <h1>${screen.title}</h1>
       <div class="insight-panel">
         <ol class="rank-list">${criteria.map((item) => `<li>${item}</li>`).join("")}</ol>
@@ -1700,6 +1714,7 @@ function renderOutcome(screen) {
     <div class="archetype-card archetype-card--${archetype.tone}">
       <div class="archetype-symbol" aria-hidden="true">${archetype.emoji}</div>
       <div class="insight-badge">Ваш архетип</div>
+      ${renderPersonalGreeting("это ваш персональный результат")}
       <h1>${archetype.title}</h1>
       <p>${archetype.subtitle}</p>
       <div class="archetype-grid">
@@ -1733,6 +1748,7 @@ function renderTransitionMap(screen) {
   return `
     <div class="profile-card transition-map-card insight-output">
       <div class="insight-badge">Карта перехода</div>
+      ${renderPersonalGreeting("мы собрали карту из ваших ответов")}
       <h1>${screen.title}</h1>
       <div class="insight-panel">
         <p>Мы собрали маршрут из ваших ответов: что происходит сейчас, что важно вернуть и каким способом двигаться дальше.</p>
@@ -1764,6 +1780,7 @@ function renderDirections(screen) {
   return `
     <div class="directions-layout">
       <div class="copy-block">
+        ${renderPersonalGreeting("эти среды выглядят наиболее близко к вашему сценарию")}
         <h1>Мы подобрали профессиональные среды, которые могут вам подойти</h1>
       </div>
       <div class="direction-list">
@@ -1808,6 +1825,7 @@ function renderBonus(screen) {
         <div class="glass-interaction">
           <div class="glass-copy">
             <span class="glass-kicker">Стекло сомнений</span>
+            ${renderPersonalGreeting("ваш стартовый бонус почти открыт")}
             <h1>${content.title}</h1>
             <p>${content.subtitle}</p>
           </div>
@@ -1841,6 +1859,7 @@ function renderBonus(screen) {
         <div class="glass-reveal">
           <div class="glass-reveal-head">
             <span class="glass-kicker">Возможность открыта</span>
+            ${renderPersonalGreeting("мы открыли бонус под ваш сценарий")}
             <strong class="${countdown.isExpired ? "is-expired" : ""}">${countdown.isExpired ? "Срок действия бонуса закончился" : "Бонус доступен 24 часа"}</strong>
           </div>
           <div class="glass-package">
@@ -1892,6 +1911,7 @@ function renderNextStep(screen) {
   return `
     <div class="profile-card next-card insight-output">
       <div class="insight-badge">Финальный шаг</div>
+      ${renderPersonalGreeting("осталось выбрать первый шаг")}
       <h1>${screen.title}</h1>
       <div class="insight-panel">
         <p>Вы уже собрали карту состояния и несколько безопасных вариантов движения. Осталось выбрать, с чего начать.</p>
