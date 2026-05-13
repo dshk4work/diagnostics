@@ -3,6 +3,7 @@ const STORAGE_KEY = "skillbox_diagnostic_state_v2";
 const QUEUE_KEY = "skillbox_diagnostic_save_queue_v2";
 const SKILLBOX_LOGO_URL = "https://cdn.skillbox.pro/wbd-front/skillbox-static/skillbox-white.svg";
 const WELCOME_VISUAL_URL = "https://cdn.skillbox.pro/wbd-front/skillbox-static/main-page-new/service/card/card-2-sm@1x.png";
+const GLASS_CRACK_TARGET = 10;
 
 const scoreKeys = [
   "burnout",
@@ -1815,45 +1816,35 @@ function renderBonus(screen) {
   const gameState = isRevealed ? "reveal" : storedGameState;
   const promoCode = reward.promoCode || generatePromoCode(state.profile?.name || state.user_name, new Date());
   const countdown = getRewardCountdown(reward);
-  const crackCount = Math.min(5, state.bonus_cracks || 0);
+  const crackCount = Math.min(GLASS_CRACK_TARGET, state.bonus_cracks || 0);
+  const crackProgress = Math.min(100, Math.round((crackCount / GLASS_CRACK_TARGET) * 100));
   const isConsultationRequested = Boolean(reward.consultationRequested);
+  const showGlassInteraction = gameState === "intro" || gameState === "glass";
   return `
     <div class="glass-bonus glass-bonus--${content.tone} glass-bonus--${gameState}">
       <div class="glass-particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-      ${gameState === "intro" ? `
-        <div class="glass-intro">
-          <span class="glass-kicker">Персональный стартовый бонус</span>
-          <h1>${content.title}</h1>
-          <p>${content.subtitle}</p>
-          <div class="glass-preview" aria-hidden="true">
-            <div class="glass-hidden-card"><span>?</span><strong>Стартовый бонус</strong></div>
-            <div class="glass-frost"></div>
-          </div>
-          <div class="glass-actions">
-            <button class="primary-button inline-primary" type="button" data-bonus-action="start">Разбить стекло сомнений</button>
-            <button class="glass-skip" type="button" data-bonus-action="reveal">Открыть бонус без игры</button>
-          </div>
-        </div>
-      ` : ""}
-      ${gameState === "glass" ? `
+      ${showGlassInteraction ? `
         <div class="glass-interaction">
           <div class="glass-copy">
             <span class="glass-kicker">Стекло сомнений</span>
             <h1>${content.title}</h1>
             <p>${content.subtitle}</p>
           </div>
-          <div class="glass-instruction">${content.instruction}: нужно 5 стуков. После пятого стекло разобьётся и откроет бонус.</div>
           <div class="glass-pane" data-glass-pane>
             <div class="glass-glow" aria-hidden="true"></div>
             <div class="glass-bonus-ghost" aria-hidden="true">
               <span>?</span>
               <strong>скрытый бонус</strong>
             </div>
+            <div class="glass-pane-callout">
+              <strong>${content.instruction}</strong>
+              <span>Касайтесь стекла, пока оно не поддастся</span>
+            </div>
             <div class="glass-crack-layer" aria-hidden="true">
               ${Array.from({ length: crackCount }, (_, index) => `<span class="glass-crack glass-crack--${index + 1}"></span>`).join("")}
             </div>
           </div>
-          <div class="glass-progress"><span style="width:${Math.min(100, crackCount * 20)}%"></span></div>
+          <div class="glass-progress"><span style="width:${crackProgress}%"></span></div>
           <button class="glass-skip" type="button" data-bonus-action="reveal">Открыть бонус без игры</button>
         </div>
       ` : ""}
@@ -2590,15 +2581,16 @@ function bindGlassInteraction(screen) {
   const addCrack = (event) => {
     const rect = pane.getBoundingClientRect();
     const point = { x: event.clientX, y: event.clientY };
-    state.bonus_cracks = Math.min(5, (state.bonus_cracks || 0) + 1);
+    if (state.bonus_game_state === "intro") state.bonus_game_state = "glass";
+    state.bonus_cracks = Math.min(GLASS_CRACK_TARGET, (state.bonus_cracks || 0) + 1);
     const crack = document.createElement("span");
     crack.className = `glass-crack glass-crack--live glass-crack--${state.bonus_cracks}`;
     crack.style.left = `${Math.max(8, Math.min(rect.width - 48, point.x - rect.left))}px`;
     crack.style.top = `${Math.max(8, Math.min(rect.height - 48, point.y - rect.top))}px`;
     pane.querySelector(".glass-crack-layer")?.append(crack);
-    pane.closest(".glass-interaction")?.querySelector(".glass-progress span")?.style.setProperty("width", `${Math.min(100, state.bonus_cracks * 20)}%`);
+    pane.closest(".glass-interaction")?.querySelector(".glass-progress span")?.style.setProperty("width", `${Math.min(100, Math.round((state.bonus_cracks / GLASS_CRACK_TARGET) * 100))}%`);
     persistState();
-    if (state.bonus_cracks >= 5) completeGlassInteraction();
+    if (state.bonus_cracks >= GLASS_CRACK_TARGET) completeGlassInteraction();
   };
 
   pane.addEventListener("pointerdown", (event) => {
