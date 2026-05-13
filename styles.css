@@ -7638,7 +7638,6 @@ h1 {
    container on larger screens instead of wide 980-1040px panels. */
 @media (min-width: 768px) {
   .screen:not(.screen--welcome),
-  .screen-id--directions,
   .screen-id--bonus {
     --side: clamp(24px, 3.2vw, 36px);
     --panel-x: var(--side);
@@ -7648,13 +7647,12 @@ h1 {
   }
 
   .screen-id--directions .direction-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1200px) {
   .screen:not(.screen--welcome),
-  .screen-id--directions,
   .screen-id--bonus {
     width: min(calc(100vw - 96px), 740px);
   }
@@ -7662,8 +7660,79 @@ h1 {
 
 @media (min-width: 1440px) {
   .screen:not(.screen--welcome),
-  .screen-id--directions,
   .screen-id--bonus {
     width: 740px;
+  }
+}
+
+/* Direction recommendations need more horizontal room than question screens. */
+.screen-id--directions {
+  --side: clamp(18px, 3.8vw, 36px);
+  --panel-x: var(--side);
+  width: min(calc(100vw - 20px), 980px);
+  padding-left: var(--side);
+  padding-right: var(--side);
+}
+
+.screen-id--directions .direction-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.screen-id--directions .direction-card {
+  min-width: 0;
+}
+
+.screen-id--directions .direction-card h2,
+.screen-id--directions .direction-card > p,
+.screen-id--directions .direction-fact p {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.screen-id--directions .direction-card:not(.is-best-match) h2 {
+  padding-right: 0;
+}
+
+.screen-id--directions .direction-card.is-best-match h2 {
+  padding-right: min(38%, 132px);
+}
+
+@media (min-width: 720px) {
+  .screen-id--directions {
+    width: min(calc(100vw - 32px), 900px);
+  }
+
+  .screen-id--directions .direction-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1080px) {
+  .screen-id--directions {
+    width: min(calc(100vw - 64px), 1080px);
+  }
+
+  .screen-id--directions .direction-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1079px) {
+  .screen-id--directions .direction-card h2 {
+    font-size: clamp(19px, 2.8vw, 24px);
+  }
+
+  .screen-id--directions .direction-card > p {
+    font-size: 14px;
+  }
+
+  .screen-id--directions .direction-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .screen-id--directions .direction-fact p {
+    font-size: 12px;
+    line-height: 1.14;
   }
 }
