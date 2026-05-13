@@ -766,13 +766,61 @@ const finalCtas = {
   },
 };
 
+const bonusContentByOutcome = {
+  emotional_exhaustion: {
+    tone: "soft",
+    title: "Решиться на изменения бывает особенно сложно, когда сил мало",
+    subtitle: "Иногда между человеком и новым этапом стоит не отсутствие возможностей, а усталость и страх снова перегрузить себя.",
+    instruction: "Стукните по стеклу, чтобы разбить сомнения",
+    consultationCta: "Разобрать мягкий сценарий изменений",
+    consultationText: "На консультации поможем:",
+    consultationBullets: ["понять, какие направления не усилят перегруз", "выбрать спокойный формат изменений", "определить безопасный первый шаг"],
+  },
+  growth_ceiling: {
+    tone: "active",
+    title: "Кажется, вы готовы к следующему уровню",
+    subtitle: "Иногда следующий уровень начинается с разрешения себе расти дальше.",
+    instruction: "Стукните по стеклу, чтобы открыть следующий шаг",
+    consultationCta: "Обсудить карьерный апгрейд",
+    consultationText: "На консультации поможем:",
+    consultationBullets: ["понять, куда можно вырасти из текущего опыта", "выбрать навыки с высоким потенциалом", "собрать план карьерного роста"],
+  },
+  wrong_place: {
+    tone: "exploratory",
+    title: "Когда долго ищешь своё, легко застрять в сомнениях",
+    subtitle: "Иногда новый этап начинается с разрешения себе попробовать другой путь.",
+    instruction: "Стукните по стеклу, чтобы открыть новые возможности",
+    consultationCta: "Разобрать мой маршрут",
+    consultationText: "На консультации поможем:",
+    consultationBullets: ["сузить выбор направлений", "понять, что вам действительно подходит", "не выбирать профессию вслепую"],
+  },
+  money_freedom: {
+    tone: "bold",
+    title: "Свобода редко появляется сама",
+    subtitle: "Но иногда всё начинается с одного действия, которое долго откладывалось.",
+    instruction: "Стукните по стеклу, чтобы открыть возможность",
+    consultationCta: "Собрать траекторию к свободе",
+    consultationText: "На консультации поможем:",
+    consultationBullets: ["выбрать направления с потенциалом дохода", "понять, как перейти без резкого риска", "собрать реалистичный сценарий изменений"],
+  },
+  soft_search: {
+    tone: "playful",
+    title: "Иногда новое начинается с маленького внутреннего “а почему бы и нет?”",
+    subtitle: "Необязательно менять всю жизнь сразу. Иногда достаточно разрешить себе попробовать.",
+    instruction: "Стукните по стеклу, чтобы открыть новый этап",
+    consultationCta: "Подобрать мягкий старт",
+    consultationText: "На консультации поможем:",
+    consultationBullets: ["найти направление для мягкого старта", "понять, что стоит попробовать", "превратить интерес в первый навык"],
+  },
+};
+
 const screensConfig = [
   {
     id: "welcome",
     type: "welcome",
-    title: "Временное утомление или постоянный стресс?",
+    title: "Временное утомление или постоянный стресс? Поможем разобраться",
     subtitle:
-      "Пройдите короткую диагностику и получите понятный разбор: что с вами происходит сейчас и куда можно двигаться дальше.",
+      "Пройдите быстрый диагностический опрос и получите понятный разбор вашего состояния и рекомендации",
     cta: "Начать диагностику",
     meta: "5 минут · результат сразу",
   },
@@ -965,6 +1013,10 @@ const state = hydrateState();
 let analysisTimer = null;
 let longPressTimer = null;
 let longPressAdvanceTimer = null;
+let bonusHintTimer = null;
+let bonusRevealTimer = null;
+let bonusCaughtTimer = null;
+let bonusCountdownTimer = null;
 let dayDrawing = false;
 let dayCanvasCtx = null;
 let contextDrag = null;
@@ -1010,6 +1062,11 @@ function hydrateState() {
     change_mode: "",
     next_chapter_items: [],
     lead: { email: "", phone: "" },
+    bonus_game_state: "intro",
+    bonus_hint_level: 0,
+    bonus_cracks: 0,
+    promo_copied: false,
+    reward: null,
     primary_pattern: "",
     physical_pattern: "",
     answers_by_step: {},
@@ -1085,7 +1142,7 @@ function render(direction = "forward") {
   const progressLabel = getProgressLabel(screen);
 
   app.innerHTML = `
-    <section class="screen screen--${screen.type} ${direction === "back" ? "is-back" : ""} ${direction === "stay" ? "is-stay" : ""}">
+    <section class="screen screen--${screen.type} screen-id--${screen.id} ${direction === "back" ? "is-back" : ""} ${direction === "stay" ? "is-stay" : ""}">
       ${screen.type === "welcome" ? renderWelcome(screen) : renderFlowShell(screen, progress, progressLabel)}
     </section>
   `;
@@ -1097,17 +1154,32 @@ function render(direction = "forward") {
 function renderWelcome(screen) {
   return `
     <img class="welcome-brand" src="${SKILLBOX_LOGO_URL}" alt="Skillbox" />
-    <div class="welcome-content">
+    <div class="welcome-shell">
       <div class="welcome-visual-wrap">
         <img class="welcome-visual" src="${WELCOME_VISUAL_URL}" alt="" aria-hidden="true" />
       </div>
-      <p class="eyebrow">Диагностика состояния</p>
-      <h1>${screen.title}</h1>
-      <p class="lead">${screen.subtitle}</p>
-    </div>
-    <div class="bottom-bar">
-      <button class="primary-button" data-action="next">${screen.cta}</button>
-      <p class="microcopy">${screen.meta}</p>
+      <div class="welcome-content">
+        <h1>${screen.title}</h1>
+        <p class="lead">${screen.subtitle}</p>
+        <div class="welcome-bottom">
+          <button class="primary-button" data-action="next">${screen.cta}</button>
+          <p class="microcopy">
+            <span class="trust-item">
+              <svg class="trust-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+                <path d="M8 4.7v3.6l2.4 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              5 минут
+            </span>
+            <span class="trust-item">
+              <svg class="trust-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8.9 1.8 3.7 8.6h3.8l-.5 5.6 5.3-7H8.4l.5-5.4Z" fill="currentColor"></path>
+              </svg>
+              результат сразу
+            </span>
+          </p>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -1322,10 +1394,8 @@ function renderDayLine(screen) {
   return `
     ${renderHeaderText(screen)}
     <div class="day-line-card">
-      <div class="axis-label axis-label--top">Выше = легче, больше энергии</div>
       <canvas class="day-canvas" width="720" height="420" aria-label="Линия состояния за день"></canvas>
       <div class="day-x"><span>Утро / пробуждение</span><span>Обед</span><span>Сон</span></div>
-      <div class="axis-label axis-label--bottom">Ниже = тяжелее, меньше энергии</div>
     </div>
     <div class="micro-insight ${pattern ? "is-visible" : ""}">
       ${pattern ? `<strong>${pattern}</strong><span>${getDayLineInsight(pattern)}</span>` : "Проведите линию пальцем или мышью от утра к ночи."}
@@ -1338,15 +1408,15 @@ function renderBattery(screen) {
   const charge = Math.max(0, 100 - selected.length * 25);
   return `
     ${renderHeaderText(screen)}
-    <div class="battery-stage">
-      <div class="battery-shell" data-drop-battery>
+    <div class="battery-stage" data-drop-battery>
+      <div class="battery-shell">
         <div class="battery-fill" style="height:${charge}%"></div>
         <span>${charge}%</span>
       </div>
-      <div class="battery-selected">${selected.map((item) => `<span>${item}</span>`).join("") || "Перетащите или нажмите до 4 источников"}</div>
+      <div class="battery-selected">${selected.map((item) => `<button type="button" data-battery="${escapeHtml(item)}" aria-label="Убрать ${escapeHtml(item)}">${item}</button>`).join("") || "Перетащите или нажмите до 4 источников"}</div>
     </div>
     <div class="option-grid option-grid--compact">
-      ${batteryCards.map((item) => `<button class="option-card ${selected.includes(item) ? "is-selected" : ""}" draggable="true" data-battery="${escapeHtml(item)}">${item}</button>`).join("")}
+      ${batteryCards.map((item) => `<button class="option-card ${selected.includes(item) ? "is-selected" : ""}" data-battery="${escapeHtml(item)}">${item}</button>`).join("")}
     </div>
   `;
 }
@@ -1375,8 +1445,10 @@ function renderSourceInsight(screen) {
     <div class="profile-card insight-output">
       <div class="insight-badge">Первый сильный инсайт</div>
       <h1>${screen.title}</h1>
-      <p>По вашим ответам видно: дело не только в усталости. Сильнее всего сейчас проседают:</p>
-      <ol class="rank-list">${top.map(([key]) => `<li>${vectorLabels[key] || key}</li>`).join("")}</ol>
+      <div class="insight-panel">
+        <p>По вашим ответам видно: дело не только в усталости. Сильнее всего сейчас проседают:</p>
+        <ol class="rank-list">${top.map(([key]) => `<li>${vectorLabels[key] || key}</li>`).join("")}</ol>
+      </div>
     </div>
   `;
 }
@@ -1390,10 +1462,10 @@ function renderFuture(screen) {
         <span class="mini-label">Светлое будущее</span>
         <strong>${selected.length}/3</strong>
       </div>
-      <div class="future-slots">${selected.map((item) => `<span>${item}</span>`).join("") || "<em>Перетащите сюда 3 желания</em>"}</div>
+      <div class="future-slots">${selected.map((item) => `<button type="button" data-future="${escapeHtml(item)}" aria-label="Убрать ${escapeHtml(item)}">${item}</button>`).join("") || "<em>Перетащите сюда 3 желания</em>"}</div>
     </div>
     <div class="option-grid option-grid--compact">
-      ${futureDesireCards.map((item) => `<button class="option-card ${selected.includes(item) ? "is-selected" : ""}" draggable="true" data-future="${escapeHtml(item)}">${item}</button>`).join("")}
+      ${futureDesireCards.map((item) => `<button class="option-card ${selected.includes(item) ? "is-selected" : ""}" data-future="${escapeHtml(item)}">${item}</button>`).join("")}
     </div>
   `;
 }
@@ -1460,7 +1532,9 @@ function renderCriteriaPreview(screen) {
     <div class="profile-card reveal-card insight-output">
       <div class="insight-badge">Профиль собран</div>
       <h1>${screen.title}</h1>
-      <ol class="rank-list">${criteria.map((item) => `<li>${item}</li>`).join("")}</ol>
+      <div class="insight-panel">
+        <ol class="rank-list">${criteria.map((item) => `<li>${item}</li>`).join("")}</ol>
+      </div>
     </div>
   `;
 }
@@ -1490,10 +1564,10 @@ function renderBackpack(screen) {
     ${renderHeaderText(screen)}
     <div class="backpack-stage" data-drop-backpack>
       <div class="backpack-visual" aria-hidden="true"><span>${selected.length}/5</span></div>
-      <div class="backpack-items">${selected.map((item) => `<span>${itemIcons[item] || "•"} ${item}</span>`).join("") || "Перетащите или нажмите 5 вещей"}</div>
+      <div class="backpack-items">${selected.map((item) => `<button type="button" data-backpack="${escapeHtml(item)}" aria-label="Убрать ${escapeHtml(item)}">${itemIcons[item] || "•"} ${item}</button>`).join("") || "Перетащите или нажмите 5 вещей"}</div>
     </div>
     <div class="option-grid option-grid--compact">
-      ${backpackItems.map((item) => `<button class="option-card ${selected.includes(item) ? "is-selected" : ""}" draggable="true" data-backpack="${escapeHtml(item)}"><span>${itemIcons[item] || "•"}</span>${item}</button>`).join("")}
+      ${backpackItems.map((item) => `<button class="option-card ${selected.includes(item) ? "is-selected" : ""}" data-backpack="${escapeHtml(item)}"><span>${itemIcons[item] || "•"}</span>${item}</button>`).join("")}
     </div>
   `;
 }
@@ -1556,7 +1630,7 @@ function renderOutcome(screen) {
   return `
     <div class="archetype-card archetype-card--${archetype.tone}">
       <div class="archetype-symbol" aria-hidden="true">${archetype.emoji}</div>
-      <div class="insight-badge">Архетип изменений</div>
+      <div class="insight-badge">Ваш архетип</div>
       <h1>${archetype.title}</h1>
       <p>${archetype.subtitle}</p>
       <div class="archetype-grid">
@@ -1591,7 +1665,9 @@ function renderTransitionMap(screen) {
     <div class="profile-card transition-map-card insight-output">
       <div class="insight-badge">Карта перехода</div>
       <h1>${screen.title}</h1>
-      <p>Мы собрали маршрут из ваших ответов: что происходит сейчас, что важно вернуть и каким способом двигаться дальше.</p>
+      <div class="insight-panel">
+        <p>Мы собрали маршрут из ваших ответов: что происходит сейчас, что важно вернуть и каким способом двигаться дальше.</p>
+      </div>
       <div class="transition-path">
         ${steps
           .map(
@@ -1620,22 +1696,19 @@ function renderDirections(screen) {
     <div class="directions-layout">
       <div class="copy-block">
         <h1>Мы подобрали профессиональные среды, которые могут вам подойти</h1>
-        <p>Не как окончательный выбор, а как безопасные варианты для примерки.</p>
       </div>
       <div class="direction-list">
         ${result.directions
           .map(
             (direction, index) => `
-            <article class="direction-card">
-              <div class="direction-index">${index + 1}</div>
+            <article class="direction-card ${index === 0 ? "is-best-match" : ""}">
+              ${index === 0 ? `<span class="direction-pill">Лучшее совпадение</span>` : ""}
               <h2>${direction.title}</h2>
               <p>${direction.fit}</p>
-              <dl>
-                <dt>Почему подходит</dt>
-                <dd>${direction.reason}</dd>
-                <dt>Какой сценарий может дать</dt>
-                <dd>${direction.scenario}</dd>
-              </dl>
+              <div class="direction-facts">
+                <div class="direction-fact direction-fact--fit"><span aria-hidden="true">✓</span><p>${direction.reason}</p></div>
+                <div class="direction-fact direction-fact--growth"><span aria-hidden="true">↗</span><p>${direction.scenario}</p></div>
+              </div>
               <button class="direction-cta" type="button">${index === 0 ? "Примерить направление" : "Посмотреть программы"}</button>
             </article>
           `,
@@ -1648,32 +1721,109 @@ function renderDirections(screen) {
 
 function renderBonus(screen) {
   const result = buildResult();
+  const content = bonusContentByOutcome[result.outcome];
+  const reward = state.reward || {};
+  const isRevealed = Boolean(reward.revealedAt && reward.mechanic === "break_glass_of_doubt");
+  const storedGameState = ["intro", "glass", "breaking"].includes(state.bonus_game_state) ? state.bonus_game_state : "intro";
+  const gameState = isRevealed ? "reveal" : storedGameState;
+  const promoCode = reward.promoCode || generatePromoCode(state.profile?.name || state.user_name, new Date());
+  const countdown = getRewardCountdown(reward);
+  const crackCount = Math.min(5, state.bonus_cracks || 0);
+  const isConsultationRequested = Boolean(reward.consultationRequested);
   return `
-    <div class="bonus-card">
-      <div class="bonus-topline">
-        <span>Стартовый пакет</span>
-        <strong>доступен 5 дней</strong>
-      </div>
-      <h1>Мы открыли для вас персональный стартовый пакет</h1>
-      <p>Он поможет перейти от результата диагностики к первому безопасному шагу.</p>
-      <div class="bonus-offer">
-        <span>до 40%</span>
-        <div>
-          <h2>${result.offer.title}</h2>
-          <p>${result.offer.description}</p>
+    <div class="glass-bonus glass-bonus--${content.tone} glass-bonus--${gameState}">
+      <div class="glass-particles" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      ${gameState === "intro" ? `
+        <div class="glass-intro">
+          <span class="glass-kicker">Персональный стартовый бонус</span>
+          <h1>${content.title}</h1>
+          <p>${content.subtitle}</p>
+          <div class="glass-preview" aria-hidden="true">
+            <div class="glass-hidden-card"><span>?</span><strong>Стартовый бонус</strong></div>
+            <div class="glass-frost"></div>
+          </div>
+          <div class="glass-actions">
+            <button class="primary-button inline-primary" type="button" data-bonus-action="start">Разбить стекло сомнений</button>
+            <button class="glass-skip" type="button" data-bonus-action="reveal">Открыть бонус без игры</button>
+          </div>
         </div>
-      </div>
-      <ul class="bonus-list">
-        <li>скидка на обучение</li>
-        <li>консультация по выбору направления</li>
-        <li>доступ к примерке профессии</li>
-        <li>план первого шага</li>
-      </ul>
-      <p class="bonus-reason">Люди с похожим профилем часто откладывают изменения, пока состояние не становится острее. Поэтому мы сохранили для вас мягкий сценарий входа — без необходимости резко менять жизнь.</p>
-      <div class="next-actions">
-        <button class="primary-button inline-primary" type="button">${result.offer.primaryCta}</button>
-        <button class="secondary-button" type="button">Сначала посмотреть направления</button>
-      </div>
+      ` : ""}
+      ${gameState === "glass" ? `
+        <div class="glass-interaction">
+          <div class="glass-copy">
+            <span class="glass-kicker">Стекло сомнений</span>
+            <h1>${content.title}</h1>
+            <p>${content.subtitle}</p>
+          </div>
+          <div class="glass-instruction">${content.instruction}: нужно 5 стуков. После пятого стекло разобьётся и откроет бонус.</div>
+          <div class="glass-pane" data-glass-pane>
+            <div class="glass-glow" aria-hidden="true"></div>
+            <div class="glass-bonus-ghost" aria-hidden="true">
+              <span>?</span>
+              <strong>скрытый бонус</strong>
+            </div>
+            <div class="glass-crack-layer" aria-hidden="true">
+              ${Array.from({ length: crackCount }, (_, index) => `<span class="glass-crack glass-crack--${index + 1}"></span>`).join("")}
+            </div>
+          </div>
+          <div class="glass-progress"><span style="width:${Math.min(100, crackCount * 20)}%"></span></div>
+          <button class="glass-skip" type="button" data-bonus-action="reveal">Открыть бонус без игры</button>
+        </div>
+      ` : ""}
+      ${gameState === "breaking" ? `
+        <div class="glass-breaking">
+          <div class="glass-burst" aria-hidden="true"></div>
+          <span class="glass-kicker">Возможность открыта</span>
+          <h1>Мы подготовили для вас персональный стартовый бонус.</h1>
+          <p>Стекло сомнений рассыпалось. Теперь можно спокойно выбрать следующий шаг.</p>
+        </div>
+      ` : ""}
+      ${gameState === "reveal" ? `
+        <div class="glass-reveal">
+          <div class="glass-reveal-head">
+            <span class="glass-kicker">Возможность открыта</span>
+            <strong class="${countdown.isExpired ? "is-expired" : ""}">${countdown.isExpired ? "Срок действия бонуса закончился" : "Бонус доступен 24 часа"}</strong>
+          </div>
+          <div class="glass-package">
+            <div class="glass-gift" aria-hidden="true">🎁</div>
+            <div>
+              <h1>Ваш персональный стартовый пакет</h1>
+              <ul class="glass-bonus-list">
+                <li>скидка 60% на подходящие программы Skillbox</li>
+                <li>персональная консультация</li>
+                <li>помощь с выбором направления</li>
+                <li>план первого шага</li>
+              </ul>
+            </div>
+          </div>
+          <div class="promo-card">
+            <span>Ваш персональный промокод:</span>
+            <strong>${promoCode}</strong>
+            <button class="secondary-button" type="button" data-bonus-action="copy">${state.promo_copied ? "✓ Промокод скопирован" : "Скопировать"}</button>
+          </div>
+          <div class="bonus-timer ${countdown.isExpired ? "is-expired" : ""}">
+            <span>Бонус действует ещё:</span>
+            <strong data-countdown>${countdown.label}</strong>
+          </div>
+          ${isConsultationRequested ? `
+            <section class="consultation-success-card">
+              <h2>Супер, мы получили вашу заявку на карьерную консультацию.</h2>
+              <p>Скоро вам позвонит наш консультант, а пока посмотрите направления, которые мы подобрали по результатам диагностики.</p>
+              <button class="primary-button inline-primary" type="button" data-bonus-action="directions">Посмотреть направления</button>
+            </section>
+          ` : `
+            <button class="primary-button inline-primary consultation-main-cta" type="button" data-bonus-action="consultation" ${countdown.isExpired ? "disabled" : ""}>${content.consultationCta}</button>
+            <section class="consultation-support-card">
+              <div class="human-avatar" aria-hidden="true">S</div>
+              <div>
+                <h2>${content.consultationText}</h2>
+                <ul>${content.consultationBullets.map((item) => `<li>${item}</li>`).join("")}</ul>
+              </div>
+            </section>
+            <button class="glass-save-button" type="button" data-bonus-action="save">Пока просто сохранить бонус</button>
+          `}
+        </div>
+      ` : ""}
     </div>
   `;
 }
@@ -1684,7 +1834,9 @@ function renderNextStep(screen) {
     <div class="profile-card next-card insight-output">
       <div class="insight-badge">Финальный шаг</div>
       <h1>${screen.title}</h1>
-      <p>Вы уже собрали карту состояния и несколько безопасных вариантов движения. Осталось выбрать, с чего начать.</p>
+      <div class="insight-panel">
+        <p>Вы уже собрали карту состояния и несколько безопасных вариантов движения. Осталось выбрать, с чего начать.</p>
+      </div>
       <div class="next-actions">
         <button class="primary-button inline-primary" type="button">${result.finalCta.primary}</button>
         <button class="secondary-button" type="button">${result.finalCta.secondary}</button>
@@ -1701,6 +1853,11 @@ function renderBottomCta(screen) {
     </div>
   `;
   if (screen.type === "antiSwipe" && Object.keys(state.anti_decisions || {}).length < antiCards.length) return "";
+  if (screen.type === "bonus") return `
+    <div class="bottom-bar bottom-bar--back-only">
+      <button class="icon-button" data-action="back" aria-label="Назад"><span aria-hidden="true">←</span></button>
+    </div>
+  `;
   if (screen.type === "nextStep") return `
     <div class="bottom-bar">
       <button class="icon-button" data-action="back" aria-label="Назад"><span aria-hidden="true">←</span></button>
@@ -1708,7 +1865,7 @@ function renderBottomCta(screen) {
     </div>
   `;
   const disabled = !canContinue(screen);
-  const label = screen.type === "contact" ? "Показать результат" : "Дальше";
+  const label = screen.type === "contact" ? "Показать результат" : screen.type === "directions" ? "Получить сюрприз" : "Дальше";
   return `
     <div class="bottom-bar">
       <button class="icon-button" data-action="back" aria-label="Назад"><span aria-hidden="true">←</span></button>
@@ -1787,6 +1944,7 @@ function bindScreen(screen) {
   if (screen.type === "antiSwipe") bindAntiSwipe(screen);
   if (screen.type === "changeMode") bindChangeMode(screen);
   if (screen.type === "backpack") bindLimitedChoice(screen, "backpack");
+  if (screen.type === "bonus") bindBonus(screen);
 }
 
 async function handleColorSelect(screen, colorId) {
@@ -1896,26 +2054,75 @@ function bindDayLine(screen) {
   if (!canvas) return;
   dayCanvasCtx = canvas.getContext("2d");
   drawDayLine();
-  canvas.addEventListener("pointerdown", (event) => {
+
+  const start = (event) => {
+    event.preventDefault();
     dayDrawing = true;
     state.day_line_points = [];
-    addDayPoint(event, canvas, screen);
+    canvas.setPointerCapture?.(event.pointerId);
+    addDayPoint(getCanvasPointer(event), canvas, screen);
+  };
+  const move = (event) => {
+    if (!dayDrawing) return;
+    event.preventDefault();
+    addDayPoint(getCanvasPointer(event), canvas, screen);
+  };
+  const end = (event) => {
+    if (!dayDrawing) return;
+    event?.preventDefault?.();
+    dayDrawing = false;
+    if ((state.day_line_points || []).length < 2) addDayPoint(getCanvasPointer(event), canvas, screen);
+    finishDayLine(screen);
+  };
+
+  canvas.addEventListener("pointerdown", (event) => {
+    start(event);
   });
   canvas.addEventListener("pointermove", (event) => {
-    if (!dayDrawing) return;
-    addDayPoint(event, canvas, screen);
+    move(event);
   });
-  window.addEventListener("pointerup", () => {
-    if (!dayDrawing) return;
-    dayDrawing = false;
-    finishDayLine(screen);
-  }, { once: true });
+  canvas.addEventListener("pointerup", end);
+  canvas.addEventListener("pointercancel", end);
+  window.addEventListener("pointerup", end);
+
+  canvas.addEventListener("mousedown", (event) => {
+    if (window.PointerEvent) return;
+    start(event);
+  });
+  window.addEventListener("mousemove", (event) => {
+    if (window.PointerEvent) return;
+    move(event);
+  });
+  window.addEventListener("mouseup", (event) => {
+    if (window.PointerEvent) return;
+    end(event);
+  });
+  canvas.addEventListener("touchstart", (event) => {
+    if (window.PointerEvent) return;
+    start(event);
+  }, { passive: false });
+  canvas.addEventListener("touchmove", (event) => {
+    if (window.PointerEvent) return;
+    move(event);
+  }, { passive: false });
+  canvas.addEventListener("touchend", (event) => {
+    if (window.PointerEvent) return;
+    end(event);
+  }, { passive: false });
 }
 
-function addDayPoint(event, canvas, screen) {
+function getCanvasPointer(event) {
+  const source = event?.touches?.[0] || event?.changedTouches?.[0] || event;
+  return {
+    clientX: source?.clientX ?? 0,
+    clientY: source?.clientY ?? 0,
+  };
+}
+
+function addDayPoint(pointEvent, canvas, screen) {
   const rect = canvas.getBoundingClientRect();
-  const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-  const y = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
+  const x = clamp((pointEvent.clientX - rect.left) / rect.width, 0, 1);
+  const y = clamp(1 - (pointEvent.clientY - rect.top) / rect.height, 0, 1);
   const points = state.day_line_points || [];
   const last = points.at(-1);
   if (!last || Math.abs(x - last.x) > 0.01) points.push({ x, y });
@@ -1978,7 +2185,14 @@ function bindLimitedChoice(screen, type) {
 
   app.querySelectorAll(config.selector).forEach((button) => {
     button.addEventListener("dragstart", (event) => event.dataTransfer.setData("text/plain", getLimitedValue(event.currentTarget, type)));
-    button.addEventListener("click", (event) => toggleLimited(getLimitedValue(event.currentTarget, type), config, screen));
+    bindLimitedPointerDrag(button, config, screen, type);
+    button.addEventListener("click", (event) => {
+      if (event.currentTarget.dataset.skipClick === "true") {
+        event.currentTarget.dataset.skipClick = "";
+        return;
+      }
+      toggleLimited(getLimitedValue(event.currentTarget, type), config, screen);
+    });
   });
 
   const drop = app.querySelector(config.drop);
@@ -1989,6 +2203,54 @@ function bindLimitedChoice(screen, type) {
       toggleLimited(event.dataTransfer.getData("text/plain"), config, screen, true);
     });
   }
+}
+
+function bindLimitedPointerDrag(button, config, screen, type) {
+  let drag = null;
+
+  button.addEventListener("pointerdown", (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    drag = {
+      pointerId: event.pointerId,
+      item: getLimitedValue(button, type),
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+    };
+    button.setPointerCapture?.(event.pointerId);
+  });
+
+  button.addEventListener("pointermove", (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (!drag.active && Math.hypot(dx, dy) < 7) return;
+    drag.active = true;
+    event.preventDefault();
+    button.classList.add("is-pointer-dragging");
+    button.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
+  });
+
+  const finish = (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const wasActive = drag.active;
+    const item = drag.item;
+    drag = null;
+    button.releasePointerCapture?.(event.pointerId);
+    button.classList.remove("is-pointer-dragging");
+    button.style.transform = "";
+    if (!wasActive) return;
+
+    event.preventDefault();
+    button.dataset.skipClick = "true";
+    const drop = app.querySelector(config.drop);
+    const rect = drop?.getBoundingClientRect();
+    const isOverDrop = rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    if (isOverDrop) toggleLimited(item, config, screen, true);
+  };
+
+  button.addEventListener("pointerup", finish);
+  button.addEventListener("pointercancel", finish);
 }
 
 function getLimitedValue(button, type) {
@@ -2004,6 +2266,7 @@ function toggleLimited(item, config, screen, forceAdd = false) {
   let next = list;
   if (exists && !forceAdd) next = list.filter((entry) => entry !== item);
   if (!exists && list.length < config.max) next = [...list, item];
+  if (!exists && list.length >= config.max) next = [...list.slice(0, config.max - 1), item];
   state[config.listKey] = next;
   state.answers_by_step[screen.id] = next;
   syncDerived();
@@ -2103,6 +2366,243 @@ function bindChangeMode(screen) {
   });
 }
 
+function bindBonus(screen) {
+  if (!state.answers_by_step.bonus_screen_viewed) {
+    state.answers_by_step.bonus_screen_viewed = new Date().toISOString();
+    trackBonusEvent("bonus_screen_view");
+  }
+  app.querySelectorAll("[data-bonus-action]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      handleBonusAction(event.currentTarget.dataset.bonusAction);
+    });
+  });
+
+  bindGlassInteraction(screen);
+  if (state.bonus_game_state === "breaking" && !state.reward?.revealedAt) bonusRevealTimer = window.setTimeout(() => revealBonus("glass"), 900);
+  if (state.reward?.revealedAt) startBonusCountdown();
+}
+
+function handleBonusAction(action) {
+  if (action === "start") {
+    state.bonus_game_state = "glass";
+    state.bonus_hint_level = 0;
+    state.bonus_cracks = 0;
+    persistState();
+    trackBonusEvent("bonus_game_start");
+    render("stay");
+    return;
+  }
+
+  if (action === "copy") {
+    copyPromoCode();
+    return;
+  }
+
+  if (action === "reveal") {
+    revealBonus("manual");
+    return;
+  }
+
+  if (action === "consultation") {
+    activateBonusReward();
+    trackBonusEvent("consultation_cta_click");
+    return;
+  }
+
+  if (action === "directions") {
+    state.last_step = "directions";
+    persistState();
+    render("forward");
+    return;
+  }
+
+  if (action === "save") {
+    trackBonusEvent("secondary_save_bonus_click");
+  }
+}
+
+function revealBonus(source) {
+  const result = buildResult();
+  const content = bonusContentByOutcome[result.outcome];
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  state.bonus_game_state = "reveal";
+  state.bonus_hint_level = 0;
+  const promoCode = state.reward?.promoCode || generatePromoCode(state.profile?.name || state.user_name, now);
+  state.reward = {
+    ...(state.reward || {}),
+    mechanic: "break_glass_of_doubt",
+    outcome: result.outcome,
+    promoCode,
+    discountPercent: 60,
+    revealedAt: state.reward?.revealedAt || now.toISOString(),
+    expiresAt: state.reward?.expiresAt || expiresAt.toISOString(),
+    expiresHours: 24,
+    consultationCta: content.consultationCta,
+    bonusActivated: true,
+  };
+  state.answers_by_step.bonus = state.reward;
+  persistState();
+  trackBonusEvent("bonus_revealed", { reveal_source: source });
+  render("stay");
+}
+
+function activateBonusReward() {
+  const result = buildResult();
+  const content = bonusContentByOutcome[result.outcome];
+  const now = new Date();
+  state.reward = {
+    ...(state.reward || {}),
+    mechanic: "break_glass_of_doubt",
+    outcome: result.outcome,
+    promoCode: state.reward?.promoCode || generatePromoCode(state.profile?.name || state.user_name, now),
+    discountPercent: 60,
+    revealedAt: state.reward?.revealedAt || now.toISOString(),
+    expiresAt: state.reward?.expiresAt || new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+    expiresHours: 24,
+    consultationCta: content.consultationCta,
+    bonusActivated: true,
+    consultationRequested: true,
+    activatedAt: now.toISOString(),
+  };
+  state.answers_by_step.bonus = state.reward;
+  syncDerived();
+  persistState();
+  render("stay");
+}
+
+function trackBonusEvent(eventName, extra = {}) {
+  const result = buildResult();
+  const content = bonusContentByOutcome[result.outcome];
+  const countdown = getRewardCountdown(state.reward);
+  saveStep(eventName, {
+    event_name: eventName,
+    outcome: result.outcome,
+    archetype: result.archetype.name,
+    promoCode: state.reward?.promoCode || "",
+    timerRemaining: countdown.remainingMs,
+    consultationCtaText: content.consultationCta,
+    ...extra,
+  });
+}
+
+function bindGlassInteraction(screen) {
+  const pane = app.querySelector("[data-glass-pane]");
+  if (!pane) return;
+
+  const addCrack = (event) => {
+    const rect = pane.getBoundingClientRect();
+    const point = { x: event.clientX, y: event.clientY };
+    state.bonus_cracks = Math.min(5, (state.bonus_cracks || 0) + 1);
+    const crack = document.createElement("span");
+    crack.className = `glass-crack glass-crack--live glass-crack--${state.bonus_cracks}`;
+    crack.style.left = `${Math.max(8, Math.min(rect.width - 48, point.x - rect.left))}px`;
+    crack.style.top = `${Math.max(8, Math.min(rect.height - 48, point.y - rect.top))}px`;
+    pane.querySelector(".glass-crack-layer")?.append(crack);
+    pane.closest(".glass-interaction")?.querySelector(".glass-progress span")?.style.setProperty("width", `${Math.min(100, state.bonus_cracks * 20)}%`);
+    persistState();
+    if (state.bonus_cracks >= 5) completeGlassInteraction();
+  };
+
+  pane.addEventListener("pointerdown", (event) => {
+    pane.setPointerCapture?.(event.pointerId);
+    if (!state.answers_by_step.glass_interaction_started) {
+      state.answers_by_step.glass_interaction_started = new Date().toISOString();
+      trackBonusEvent("glass_interaction_start");
+    }
+    addCrack(event);
+  });
+}
+
+function completeGlassInteraction() {
+  if (state.bonus_game_state === "breaking") return;
+  state.bonus_game_state = "breaking";
+  state.answers_by_step.glass_interaction_completed = new Date().toISOString();
+  persistState();
+  trackBonusEvent("glass_interaction_complete");
+  render("stay");
+}
+
+async function copyPromoCode() {
+  const code = state.reward?.promoCode || generatePromoCode(state.profile?.name || state.user_name, new Date());
+  try {
+    await navigator.clipboard?.writeText(code);
+  } catch {
+    const input = document.createElement("input");
+    input.value = code;
+    document.body.append(input);
+    input.select();
+    document.execCommand?.("copy");
+    input.remove();
+  }
+  state.promo_copied = true;
+  state.answers_by_step.promo_copied = code;
+  persistState();
+  trackBonusEvent("promo_copied");
+  render("stay");
+}
+
+function startBonusCountdown() {
+  updateBonusCountdown();
+  bonusCountdownTimer = window.setInterval(updateBonusCountdown, 1000);
+}
+
+function updateBonusCountdown() {
+  const countdown = getRewardCountdown(state.reward);
+  const node = app.querySelector("[data-countdown]");
+  if (node) node.textContent = countdown.label;
+  if (!countdown.isExpired) return;
+  app.querySelector(".bonus-timer")?.classList.add("is-expired");
+  app.querySelector(".consultation-main-cta")?.setAttribute("disabled", "");
+  if (!state.answers_by_step.countdown_expired) {
+    state.answers_by_step.countdown_expired = new Date().toISOString();
+    persistState();
+    trackBonusEvent("countdown_expired");
+  }
+}
+
+function getRewardCountdown(reward) {
+  if (!reward?.expiresAt) return { label: "24 : 00 : 00", remainingMs: 24 * 60 * 60 * 1000, isExpired: false };
+  const expiresAt = reward.expiresHours === 24 || !reward.revealedAt
+    ? reward.expiresAt
+    : new Date(new Date(reward.revealedAt).getTime() + 24 * 60 * 60 * 1000).toISOString();
+  const remainingMs = Math.max(0, new Date(expiresAt).getTime() - Date.now());
+  const totalHours = Math.floor(remainingMs / 3600000);
+  const minutes = Math.floor((remainingMs % 3600000) / 60000);
+  const seconds = Math.floor((remainingMs % 60000) / 1000);
+  const label = `${String(totalHours).padStart(2, "0")} : ${String(minutes).padStart(2, "0")} : ${String(seconds).padStart(2, "0")}`;
+  return { label, remainingMs, isExpired: remainingMs <= 0 };
+}
+
+function generatePromoCode(name, date) {
+  const cleanName = transliterate(name || "")
+    .replace(/[^a-zA-Zа-яА-ЯёЁ]/g, "")
+    .trim();
+  const baseName = cleanName || "USER";
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${capitalize(baseName)}${dd}${mm}${yyyy}`;
+}
+
+function capitalize(value) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : "USER";
+}
+
+function transliterate(value) {
+  const map = {
+    а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "i",
+    к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u",
+    ф: "f", х: "h", ц: "c", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "", э: "e",
+    ю: "yu", я: "ya",
+  };
+  return String(value).split("").map((char) => {
+    const lower = char.toLowerCase();
+    const next = map[lower] ?? char;
+    return char === lower ? next : capitalize(next);
+  }).join("");
+}
+
 function canContinue(screen) {
   if (screen.type === "input") return Boolean(state[screen.answerKey]?.trim());
   if (screen.type === "cards") return Boolean(state[screen.answerKey]);
@@ -2181,6 +2681,9 @@ function restart() {
     completed: false,
     answers_by_step: {},
     lead: { email: "", phone: "" },
+    bonus_game_state: "intro",
+    bonus_hint_level: 0,
+    reward: null,
     profile: emptyProfile(),
     score: emptyScore(),
     outcome: "",
@@ -2206,7 +2709,7 @@ function getAnswerByScreen(screen) {
     outcome: buildResult(),
     transitionMap: buildResult().transitionMap,
     directions: buildResult().directions,
-    bonus: buildResult().offer,
+    bonus: buildResult().reward,
     nextStep: buildResult().finalCta,
   };
   if (screen.type in map) return map[screen.type];
@@ -2312,6 +2815,7 @@ function buildResult(source = state) {
     directions: directionRecommendations[outcome],
     offer: offers[outcome],
     finalCta: finalCtas[outcome],
+    reward: source.reward || null,
     score,
     profile,
   };
@@ -2721,21 +3225,29 @@ function clearTimers() {
   if (analysisTimer) window.clearTimeout(analysisTimer);
   if (longPressTimer) window.clearTimeout(longPressTimer);
   if (longPressAdvanceTimer) window.clearTimeout(longPressAdvanceTimer);
+  if (bonusHintTimer) window.clearTimeout(bonusHintTimer);
+  if (bonusRevealTimer) window.clearTimeout(bonusRevealTimer);
+  if (bonusCaughtTimer) window.clearTimeout(bonusCaughtTimer);
+  if (bonusCountdownTimer) window.clearInterval(bonusCountdownTimer);
   analysisTimer = null;
   longPressTimer = null;
   longPressAdvanceTimer = null;
+  bonusHintTimer = null;
+  bonusRevealTimer = null;
+  bonusCaughtTimer = null;
+  bonusCountdownTimer = null;
   dayDrawing = false;
   contextDrag = null;
 }
 
 function getProgress(screen) {
-  const flowScreens = screensConfig.filter((item) => item.type !== "welcome");
+  const flowScreens = screensConfig.filter((item) => item.type !== "welcome" && item.type !== "nextStep");
   const index = flowScreens.findIndex((item) => item.id === screen.id);
   return Math.max(5, Math.round(((index + 1) / flowScreens.length) * 100));
 }
 
 function getProgressLabel(screen) {
-  const flowScreens = screensConfig.filter((item) => item.type !== "welcome");
+  const flowScreens = screensConfig.filter((item) => item.type !== "welcome" && item.type !== "nextStep");
   const index = flowScreens.findIndex((item) => item.id === screen.id);
   return `Шаг ${index + 1} из ${flowScreens.length}`;
 }
@@ -2749,9 +3261,10 @@ function fitCurrentScreen() {
 
   const availableHeight = content.clientHeight;
   const neededHeight = content.scrollHeight;
-  if (!availableHeight || neededHeight <= availableHeight) return;
+  if (!availableHeight || neededHeight <= availableHeight + 8) return;
 
-  const scale = Math.max(0.56, Math.min(1, availableHeight / neededHeight));
+  const minScale = window.innerWidth < 560 ? 0.92 : 0.88;
+  const scale = Math.max(minScale, Math.min(1, availableHeight / neededHeight));
   content.style.transformOrigin = "top left";
   content.style.transform = `scale(${scale})`;
   content.style.width = `${100 / scale}%`;
