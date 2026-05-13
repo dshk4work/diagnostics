@@ -1014,12 +1014,6 @@ const screensConfig = [
     title: "Мы собрали вашу траекторию: До / После",
   },
   {
-    id: "contact",
-    type: "contact",
-    progressLabel: "Шаг 19 из 24",
-    title: "Ваш результат готов",
-  },
-  {
     id: "final_result_analysis",
     type: "analysis",
     loaderId: "final_result",
@@ -1032,6 +1026,12 @@ const screensConfig = [
       "готовим персональный бонус",
       "финализируем результат",
     ],
+  },
+  {
+    id: "contact",
+    type: "contact",
+    progressLabel: "Шаг 19 из 24",
+    title: "Ваш результат готов",
   },
   {
     id: "outcome",
