@@ -995,25 +995,6 @@ const screensConfig = [
     subtitle: "Выберите 5 вещей для своего рюкзака.",
   },
   {
-    id: "trajectory_analysis",
-    type: "analysis",
-    loaderId: "trajectory",
-    title: "Собираем вашу траекторию",
-    duration: 2800,
-    lines: [
-      "учитываем выбранный формат изменений",
-      "добавляем то, что вы хотите взять в следующую главу",
-      "сверяем это с вашим состоянием",
-      "строим сценарий перехода",
-    ],
-  },
-  {
-    id: "trajectory",
-    type: "trajectory",
-    progressLabel: "Шаг 18 из 24",
-    title: "Мы собрали вашу траекторию: До / После",
-  },
-  {
     id: "final_result_analysis",
     type: "analysis",
     loaderId: "final_result",
